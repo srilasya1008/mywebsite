@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Daily Work Tracker</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; display: flex; justify-content: center; background: #F8F9FA; }
+    .container { width: 95%; max-width: 1200px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1); }
+    h2, h3 { text-align: center; color: #333; }
+    .tab { display: none; }
+    .tab.active { display: block; }
+    .form-row { display: flex; align-items: center; margin: 10px 0; }
+    .form-row label { flex: 1; text-align: right; margin-right: 15px; font-weight: bold; }
+    .form-row input, .form-row select { flex: 2; padding: 6px; border: 1px solid #ccc; border-radius: 6px; }
+    button { margin-top: 15px; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; }
+    nav { text-align: center; margin-bottom: 20px; }
+    nav button { margin-right: 10px; background: #007BFF; color: white; }
+    nav button:hover { background: #0056B3; }
+    table { margin-top: 20px; border-collapse: collapse; width: 100%; font-size: 14px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #007BFF; color: white; }
+    tr:nth-child(even) { background: #F9F9F9; }
+    .low-productivity { background-color: #FFE0E0 !important; }
+    .delete-btn { background: #DC3545; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
+    .delete-btn:hover { background: #A71D2A; }
+    .download-btn { background: #28A745; color: white; white-space: nowrap; }
+    .download-btn:hover { background: #1E7E34; }
+    .submit-btn { display: block; margin: 20px auto 0 auto; background: #28A745; color: white; }
+    .submit-btn:hover { background: #1E7E34; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Daily Work Tracker</h2>
+    <nav>
+      <button onclick="showTab('workEntry')">Employee Work Entry</button>
+      <button onclick="showTab('radarEntry')">Radar Data Entry</button>
+      <button onclick="showTab('dashboard')">Dashboard</button>
+    </nav>
+
+    <!-- Tab 1: Employee Work Entry -->
+    <div id="workEntry" class="tab active">
+      <h3>Employee Work Entry</h3>
+      <div class="form-row"><label>Date:</label><input type="date" id="date"></div>
+      <div class="form-row"><label>Employee ID:</label><input type="text" id="empId"></div>
+      <div class="form-row"><label>Employee Name:</label><input type="text" id="empName" readonly></div>
+      <div class="form-row"><label>Radar ID:</label><input type="text" id="radarId" oninput="autofillRadarData()"></div>
+      <div class="form-row"><label>Activity:</label><input type="text" id="activity" disabled></div>
+      <div class="form-row"><label>Country:</label><input type="text" id="country" disabled></div>
+      <div class="form-row"><label>Target per Hour:</label><input type="number" id="targetPerHour" disabled></div>
+      <div class="form-row"><label>Hours:</label><input type="number" id="hoursWorked" oninput="calculateTotalTarget()" min="1" max="9"></div>
+      <div class="form-row"><label>Total Target:</label><input type="number" id="totalTarget" disabled></div>
+      <div class="form-row"><label>Todos Done:</label><input type="number" id="todosDone"></div>
+      <button class="submit-btn" onclick="submitWorkEntry()">Submit Work Entry</button>
+    </div>
+
+    <!-- Tab 2: Radar Data Entry -->
+    <div id="radarEntry" class="tab">
+      <h3>Radar Data Entry</h3>
+      <div class="form-row"><label>Radar ID:</label><input type="text" id="newRadarId"></div>
+      <div class="form-row"><label>Activity:</label><input type="text" id="newActivity"></div>
+      <div class="form-row"><label>Country:</label><input type="text" id="newCountry"></div>
+      <div class="form-row"><label>Target per Hour:</label><input type="number" id="newTargetPerHour"></div>
+      <button class="submit-btn" onclick="submitRadarData()">Add Radar Data</button>
+    </div>
+
+    <!-- Tab 3: Dashboard -->
+    <div id="dashboard" class="tab">
+      <h3>Dashboard</h3>
+
+      <!-- Top search + download -->
+      <div style="display:flex; justify-content: space-between; margin-bottom: 10px;">
+        <input type="text" id="searchBoxTop" placeholder="Search..." onkeyup="filterDashboard()" style="flex:1; padding:6px; border-radius:6px; border:1px solid #ccc;">
+        <button class="download-btn" onclick="downloadTable()" style="margin-left:10px;">Download</button>
+      </div>
+
+      <table id="dashboardTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Employee ID</th>
+            <th>Employee Name</th>
+            <th>Radar ID</th>
+            <th>Activity</th>
+            <th>Country</th>
+            <th>Hours</th>
+            <th>Target/Hour</th>
+            <th>Total Target</th>
+            <th>Todos Done</th>
+            <th>Productivity (%)</th>
+            <th>Delete</th>
+          </tr>
+          <!-- Filters row -->
+          <tr>
+            <th>
+              <select id="filterMonth" onchange="filterDashboard()">
+                <option value="">Month</option>
+                <option value="01">Jan</option>
+                <option value="02">Feb</option>
+                <option value="03">Mar</option>
+                <option value="04">Apr</option>
+                <option value="05">May</option>
+                <option value="06">Jun</option>
+                <option value="07">Jul</option>
+                <option value="08">Aug</option>
+                <option value="09">Sep</option>
+                <option value="10">Oct</option>
+                <option value="11">Nov</option>
+                <option value="12">Dec</option>
+              </select>
+              <select id="filterYear" onchange="filterDashboard()">
+                <option value="">Year</option>
+                <option value="2023">2023</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+              </select>
+            </th>
+            <th><input type="text" id="filterEmpId" placeholder="Filter ID" onkeyup="filterDashboard()" style="width:100%; padding:4px;"></th>
+            <th><input type="text" id="filterEmpName" placeholder="Filter Name" onkeyup="filterDashboard()" style="width:100%; padding:4px;"></th>
+            <th colspan="9"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+  const employeeData = {
+    "297390":"Lakshmi Chellaboina","295930":"Karimulla Baig","297454":"Ravi Nukella","675124":"Hariharan Iyer",
+    "685814":"Naresh Reddy","688963":"Sulochana Vadalasetti","689612":"Tulasiram Junumala","708192":"Satheesh Kamutam",
+    "756772":"Saikat Das","2081926":"Rajesh Kumar Gondyala","2109783":"Vivek Ramteke","2170055":"Kiranmai Pata",
+    "2180441":"Shekhar Ragipani","2205491":"Leepsha Panda","2086347":"Sai Vital Anupoju","2229074":"Chakravarthy, Sriram",
+    "628525":"Sowmya Komati","732865":"Sai_krupa_thota","2278373":"Lasya_pakalapati","2109248":"Gayatri Malkapuram",
+    "618209":"Madan Lal Sharma","628404":"Ajaykanth Kanukuntla","677456":"Divya Kilari","635915":"Gangidi Bal Reddy",
+    "2160145":"Farida Aafreen","2382298":"PullaReddy Ch","2067319":"Krishna Chaitanya K","2088099":"Navaneeth Kumar G",
+    "2149013":"Hema Lavanya Devi, Polavarapu","2113711":"Himapriya, Kodati","2258909":"Kondam, Santhosh Kumar",
+    "2113402":"Puvvada Venkata Madhava Gupta","2268167":"Rishabh Joshi","2390264":"Uday Kiran","851787":"Jagadeesh Chellaboyina",
+    "894283":"Suchitra Chittapragada","2401129":"Maheswari S K","297417":"Manoj Kumar Sahu","2400206":"Sachin Jadhav"
+  };
+
+  const radarDatabase = {
+    "147843062": { activity: "SourcePrep - Ingest", country: "IND", targetPerHour: 20 },
+    "148396202": { activity: "SourcePrep - Ingest", country: "IND", targetPerHour: 0 },
+    "150353953": { activity: "Finishing - Radars", country: "MEX", targetPerHour: 13 },
+    "148503431": { activity: "SourcePrep - Ingest", country: "IND-Mumbai", targetPerHour: 8 }
+  };
+
+  const workEntries = [];
+
+  function showTab(tabId) {
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    if(tabId==='dashboard') renderDashboard();
+  }
+
+  document.getElementById("empId").addEventListener("input", function() {
+    const empId = this.value.trim();
+    document.getElementById("empName").value = employeeData[empId] || "";
+  });
+
+  function autofillRadarData() {
+    const radarId = document.getElementById("radarId").value.trim().toLowerCase();
+    if(radarId === "leave") {
+      document.getElementById("activity").value = "Leave";
+      document.getElementById("country").value = "N/A";
+      document.getElementById("targetPerHour").value = 0;
+      document.getElementById("totalTarget").value = 0;
+      document.getElementById("todosDone").value = 0;
+    } else {
+      const data = radarDatabase[radarId];
+      document.getElementById("activity").value = data?.activity || "";
+      document.getElementById("country").value = data?.country || "";
+      document.getElementById("targetPerHour").value = data?.targetPerHour || "";
+      calculateTotalTarget();
+    }
+  }
+
+  function calculateTotalTarget() {
+    const hours = parseFloat(document.getElementById("hoursWorked").value) || 0;
+    const targetPerHour = parseFloat(document.getElementById("targetPerHour").value) || 0;
+    document.getElementById("totalTarget").value = (hours * targetPerHour).toFixed(2);
+  }
+
+  function submitWorkEntry() {
+    const date = document.getElementById("date").value.trim();
+    const empId = document.getElementById("empId").value.trim();
+    const radarId = document.getElementById("radarId").value.trim();
+    const hours = parseFloat(document.getElementById("hoursWorked").value) || 0;
+
+    if(!date || !empId || !radarId) { alert("Please fill all required fields!"); return; }
+    if(hours <= 0) { alert("Hours worked must be greater than 0!"); return; }
+
+    const entry = {
+      date,
+      empId,
+      empName: document.getElementById("empName").value,
+      radarId,
+      activity: document.getElementById("activity").value,
+      country: document.getElementById("country").value,
+      targetPerHour: parseFloat(document.getElementById("targetPerHour").value) || 0,
+      hoursWorked: hours,
+      totalTarget: parseFloat(document.getElementById("totalTarget").value) || 0,
+      todosDone: parseFloat(document.getElementById("todosDone").value) || 0
+    };
+
+    const existingHours = workEntries.filter(e => e.date===entry.date && e.empId===entry.empId)
+      .reduce((sum,e)=>sum+e.hoursWorked,0);
+
+    if(existingHours + entry.hoursWorked > 9) { alert("Error: Total working hours cannot exceed 9 hours per day for an employee."); return; }
+
+    workEntries.push(entry);
+    alert("Work entry submitted for " + entry.empName);
+  }
+
+  function submitRadarData() {
+    const radarId = document.getElementById("newRadarId").value.trim();
+    if(!radarId) { alert("Please enter Radar ID!"); return; }
+    radarDatabase[radarId] = {
+      activity: document.getElementById("newActivity").value,
+      country: document.getElementById("newCountry").value,
+      targetPerHour: parseFloat(document.getElementById("newTargetPerHour").value) || 0
+    };
+    alert("Radar data added!");
+  }
+
+  function renderDashboard() {
+    const tbody = document.querySelector("#dashboardTable tbody");
+    tbody.innerHTML = "";
+
+    workEntries.forEach((entry,index)=>{
+      let productivity = "N/A";
+      if(entry.radarId.trim().toLowerCase()==="leave") productivity = "0.00%";
+      else if(entry.totalTarget>0) productivity = ((entry.todosDone/entry.totalTarget)*100).toFixed(2)+"%";
+
+      const row = document.createElement("tr");
+      if(productivity!=="N/A" && parseFloat(productivity)<50) row.classList.add("low-productivity");
+
+      row.innerHTML=`
+        <td>${entry.date}</td>
+        <td>${entry.empId}</td>
+        <td>${entry.empName}</td>
+        <td>${entry.radarId}</td>
+        <td>${entry.activity}</td>
+        <td>${entry.country}</td>
+        <td>${entry.hoursWorked}</td>
+        <td>${entry.targetPerHour}</td>
+        <td>${entry.totalTarget}</td>
+        <td>${entry.todosDone}</td>
+        <td>${productivity}</td>
+        <td><button class="delete-btn" onclick="deleteEntry(${index})">Delete</button></td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  function deleteEntry(index) {
+    workEntries.splice(index,1);
+    renderDashboard();
+  }
+
+  function filterDashboard() {
+    const searchTop = document.getElementById("searchBoxTop").value.toLowerCase();
+    const filterMonth = document.getElementById("filterMonth").value;
+    const filterYear = document.getElementById("filterYear").value;
+    const filterEmpId = document.getElementById("filterEmpId").value.toLowerCase();
+    const filterEmpName = document.getElementById("filterEmpName").value.toLowerCase();
+
+    const rows = document.querySelectorAll("#dashboardTable tbody tr");
+
+    rows.forEach(row => {
+      const cells = row.getElementsByTagName("td");
+      const date = cells[0].innerText; // format YYYY-MM-DD
+      const empId = cells[1].innerText.toLowerCase();
+      const empName = cells[2].innerText.toLowerCase();
+      const rowText = row.innerText.toLowerCase();
+
+      let show = true;
+
+      if(searchTop && !rowText.includes(searchTop)) show = false;
+      if(filterEmpId && !empId.includes(filterEmpId)) show = false;
+      if(filterEmpName && !empName.includes(filterEmpName)) show = false;
+
+      if(filterMonth || filterYear) {
+        const [year, month] = date.split("-");
+        if(filterMonth && month !== filterMonth) show = false;
+        if(filterYear && year !== filterYear) show = false;
+      }
+
+      row.style.display = show ? "" : "none";
+    });
+  }
+
+  function downloadTable(){
+    let csv=[];
+    const rows=document.querySelectorAll("#dashboardTable tr");
+    rows.forEach(row=>{
+      const cols=row.querySelectorAll("th, td");
+      const rowData=[];
+      cols.forEach(cell=>rowData.push(cell.innerText));
+      csv.push(rowData.join(","));
+    });
+    const csvFile=new Blob([csv.join("\n")],{type:"text/csv"});
+    const link=document.createElement("a");
+    link.download="dashboard_data.csv";
+    link.href=window.URL.createObjectURL(csvFile);
+    link.click();
+  }
+</script>
+</body>
+</html>
